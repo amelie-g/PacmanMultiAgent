@@ -74,25 +74,33 @@ class ReflexAgent(Agent):
         newScaredTimes = [ghostState.scaredTimer for ghostState in newGhostStates]
 
         "*** YOUR CODE HERE ***"
+        # set action score to zero
         total_score = 0.0
-
+        # set distance to infinitely large value
         min_ghost_dist = float("inf")
+        # loop through ghost states
         for ghostState in newGhostStates:
-            # if ghostState.scaredTimer == 0:
+            # get position of ghosts
             ghost_pos = ghostState.getPosition()
+            # calculate manhattan distance from player to ghost
             ghost_distance = util.manhattanDistance(newPos, ghost_pos)
+            # set minimum distance if manhattan distance is less
             if ghost_distance < min_ghost_dist:
                 min_ghost_dist = ghost_distance
+            # add ghost distance to total score
             total_score += ghost_distance
 
+        # if ghost is very close to pacman return distance
         if min_ghost_dist < 3:
             return min_ghost_dist
 
+        # calculate the distance by getting food list and finding manhattan distance to each food dot
         food_distances = [util.manhattanDistance(newPos, food_pos) for food_pos in currentGameState.getFood().asList()]
+
+        # if there is still food on the board, find the closest food
         if len(food_distances) > 0:
             closest_food = min(food_distances)
             return 100.0 - closest_food
-
         return total_score
 
 def scoreEvaluationFunction(currentGameState):
@@ -148,7 +156,73 @@ class MinimaxAgent(MultiAgentSearchAgent):
             Returns the total number of agents in the game
         """
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        self.game_agents = gameState.getNumAgents()
+
+        # start with pacman agent at the root (depth 0)
+        path = self.max_value(gameState, 0, 0)
+
+        return path[1]
+
+    def max_value(self, state, agent, depth):
+        # each vertex has a score with an action
+        max_score = float('-inf')
+        max_action = "Stop"
+
+        # loop through all actions for agent
+        for action in state.getLegalActions(agent):
+
+            # compute new depth
+            new_depth = depth + 1
+
+            # iterate through to next agent
+            new_agent = new_depth % self.game_agents
+
+            # get score for action
+            cur_score = self.compute_score(state.generateSuccessor(agent, action), new_agent, new_depth)
+
+            # keep track of current
+            # max score and update if current score is max
+            if cur_score > max_score:
+                max_score = cur_score
+                max_action = action
+
+        return max_score, max_action
+
+    def min_value(self, state, agent, depth):
+        # each vertex has a score with an action
+        min_score = float('inf')
+        min_action = "Stop"
+
+        # loop through all actions for agent
+        for action in state.getLegalActions(agent):
+
+            # compute new depth
+            new_depth = depth + 1
+
+            # iterate though to next agent
+            new_agent = new_depth % self.game_agents
+
+            # get score for action
+            cur_score = self.compute_score(state.generateSuccessor(agent, action), new_agent, new_depth)
+
+            # update if current score is minimum
+            if cur_score < min_score:
+                min_score = cur_score
+                min_action = action
+
+        return min_score, min_action
+
+    def compute_score(self, state, agent, depth):
+        # iterated through all depths and game agents
+        max_possible = depth >= self.depth*self.game_agents
+
+        if max_possible or state.isLose() or state.isWin():
+            return self.evaluationFunction(state)
+        if agent == 0:
+            return self.max_value(state, agent, depth)[0]
+        else:
+            return self.min_value(state, agent, depth)[0]
+
 
 class AlphaBetaAgent(MultiAgentSearchAgent):
     """
