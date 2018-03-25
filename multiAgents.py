@@ -10,7 +10,8 @@
 # (denero@cs.berkeley.edu) and Dan Klein (klein@cs.berkeley.edu).
 # Student side autograding was added by Brad Miller, Nick Hay, and
 # Pieter Abbeel (pabbeel@cs.berkeley.edu).
-
+# Project 2 pt 1 ReflexAgent & Minimax author: Amelie Cameron
+# CSC 665-01
 
 from util import manhattanDistance
 from game import Directions
@@ -234,7 +235,83 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
           Returns the minimax action using self.depth and self.evaluationFunction
         """
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        self.game_agents = gameState.getNumAgents()
+
+        # start with pacman agent at the root (depth 0)
+        path = self.max_value(gameState, 0, 0, float('-inf'), float('inf'))
+
+        return path[1]
+
+    def max_value(self, state, agent, depth, alpha, beta):
+        v = float('-inf')
+        v_action = 'Stop'
+
+        # loop through successor states
+        for action in state.getLegalActions(agent):
+
+            # compute new depth
+            new_depth = depth + 1
+
+            # iterate through to next agent
+            new_agent = new_depth % self.game_agents
+
+            # get score for action
+            cur_v = self.compute_score(state.generateSuccessor(agent, action), new_agent, new_depth, alpha, beta)
+
+            # find max
+            if cur_v > v:
+                v = cur_v
+                v_action = action
+
+            # keep track of current
+            # max score and update if current score is max
+            if v > beta:
+                return v, v_action
+
+            alpha = max(alpha, v)
+
+        return v, v_action
+
+    def min_value(self, state, agent, depth, alpha, beta):
+        # each vertex has a score with an action
+        v = float('inf')
+        v_action = "Stop"
+
+        # loop through all actions for agent
+        for action in state.getLegalActions(agent):
+            # compute new depth
+            new_depth = depth + 1
+
+            # iterate though to next agent
+            new_agent = new_depth % self.game_agents
+
+            # get score for action
+            cur_v = self.compute_score(state.generateSuccessor(agent, action), new_agent, new_depth, alpha, beta)
+
+            # find min v
+            if cur_v < v:
+                v = cur_v
+                v_action = action
+
+            # update if current score is minimum
+            if v < alpha:
+                return v, v_action
+
+            beta = min(beta, v)
+
+        return v, v_action
+
+    def compute_score(self, state, agent, depth, alpha, beta):
+        # iterated through all depths and game agents
+        max_possible = depth >= self.depth * self.game_agents
+
+        if max_possible or state.isLose() or state.isWin():
+            return self.evaluationFunction(state)
+        if agent == 0:  # pacman
+            return self.max_value(state, agent, depth, alpha, beta)[0]
+        else:
+            return self.min_value(state, agent, depth, alpha, beta)[0]
+
 
 class ExpectimaxAgent(MultiAgentSearchAgent):
     """
