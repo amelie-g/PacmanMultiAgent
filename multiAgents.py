@@ -391,8 +391,33 @@ def betterEvaluationFunction(currentGameState):
 
       DESCRIPTION: <write something here so we know what you did>
     """
-    "*** YOUR CODE HERE ***"
+    curPos = currentGameState.getPacmanPosition()
+    ghostStates = currentGameState.getGhostStates()
 
+    # set action score to zero
+    total_score = 0.0
+
+    closest_ghosts = []
+    # loop through ghost states
+    for ghostState in ghostStates:
+        # get position of ghosts
+        ghost_pos = ghostState.getPosition()
+        # calculate manhattan distance from player to ghost
+        ghost_distance = util.manhattanDistance(curPos, ghost_pos)
+        if ghost_distance == 0:
+            closest_ghosts.append(0)
+        else:
+            g_score = -1/ghost_distance
+            closest_ghosts.append(g_score)
+
+    ghost_score = min(closest_ghosts)
+    food_distances = [-1*util.manhattanDistance(curPos, food_pos) for food_pos in currentGameState.getFood().asList()]
+    if len(food_distances):
+        food_score = max(food_distances)
+    else:
+        food_score = 1000
+    current_score = currentGameState.getScore()
+    return food_score + ghost_score + current_score
 
 # Abbreviation
 better = betterEvaluationFunction
