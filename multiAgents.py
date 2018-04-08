@@ -10,8 +10,11 @@
 # (denero@cs.berkeley.edu) and Dan Klein (klein@cs.berkeley.edu).
 # Student side autograding was added by Brad Miller, Nick Hay, and
 # Pieter Abbeel (pabbeel@cs.berkeley.edu).
-# Project 2 pt 1 ReflexAgent & Minimax author: Amelie Cameron
-# CSC 665-01
+# Project 2 pt 1 ReflexAgent & Minimax
+# Project 2 pt 2 Alpha-Beta Pruning, Expectimax, & Better Evaluation Function
+# Amelie Cameron
+# CSC 665-01 Professor Yoon
+# Due 04/08/18
 
 from util import manhattanDistance
 from game import Directions
@@ -100,7 +103,9 @@ class ReflexAgent(Agent):
 
         # if there is still food on the board, find the closest food
         if len(food_distances) > 0:
+            # find closest food
             closest_food = min(food_distances)
+            # return higher priority for close food rather than ghosts
             return 100.0 - closest_food
         return total_score
 
@@ -157,11 +162,11 @@ class MinimaxAgent(MultiAgentSearchAgent):
             Returns the total number of agents in the game
         """
         "*** YOUR CODE HERE ***"
+        # find how many agents
         self.game_agents = gameState.getNumAgents()
 
         # start with pacman agent at the root (depth 0)
         path = self.max_value(gameState, 0, 0)
-
         return path[1]
 
     def max_value(self, state, agent, depth):
@@ -186,7 +191,7 @@ class MinimaxAgent(MultiAgentSearchAgent):
             if cur_score > max_score:
                 max_score = cur_score
                 max_action = action
-
+        # return best score and action associated with it
         return max_score, max_action
 
     def min_value(self, state, agent, depth):
@@ -210,17 +215,19 @@ class MinimaxAgent(MultiAgentSearchAgent):
             if cur_score < min_score:
                 min_score = cur_score
                 min_action = action
-
+        # return min score and action associated with it
         return min_score, min_action
 
     def compute_score(self, state, agent, depth):
         # iterated through all depths and game agents
         max_possible = depth >= self.depth*self.game_agents
-
+        # evaluate if game is over
         if max_possible or state.isLose() or state.isWin():
             return self.evaluationFunction(state)
+        # if pacman, return max score
         if agent == 0:
             return self.max_value(state, agent, depth)[0]
+        # if ghost, return min score
         else:
             return self.min_value(state, agent, depth)[0]
 
@@ -235,14 +242,17 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
           Returns the minimax action using self.depth and self.evaluationFunction
         """
         "*** YOUR CODE HERE ***"
+        # find how many agents
         self.game_agents = gameState.getNumAgents()
 
         # start with pacman agent at the root (depth 0)
+        # set alpha to negative infinity
+        # set beta to positive infinity
         path = self.max_value(gameState, 0, 0, float('-inf'), float('inf'))
-
         return path[1]
 
     def max_value(self, state, agent, depth, alpha, beta):
+        # assign value to negative infinity and value action to stop
         v = float('-inf')
         v_action = 'Stop'
 
@@ -255,21 +265,20 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
             # iterate through to next agent
             new_agent = new_depth % self.game_agents
 
-            # get score for action
+            # get current score for action at given depth of given agent and given alpha and beta values
             cur_v = self.compute_score(state.generateSuccessor(agent, action), new_agent, new_depth, alpha, beta)
 
-            # find max
+            # find max, if current value is bigger than set value, reset v
             if cur_v > v:
                 v = cur_v
                 v_action = action
 
-            # keep track of current
-            # max score and update if current score is max
+            # if current score is maximum, return
             if v > beta:
                 return v, v_action
-
+            # set new alpha value to the larger of either alpha or v
             alpha = max(alpha, v)
-
+        # return maximum value
         return v, v_action
 
     def min_value(self, state, agent, depth, alpha, beta):
@@ -285,30 +294,32 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
             # iterate though to next agent
             new_agent = new_depth % self.game_agents
 
-            # get score for action
+            # get current score for action at given depth of given agent and given alpha and beta values
             cur_v = self.compute_score(state.generateSuccessor(agent, action), new_agent, new_depth, alpha, beta)
 
-            # find min v
+            # find min, if current value is smaller than set value, reset v
             if cur_v < v:
                 v = cur_v
                 v_action = action
 
-            # update if current score is minimum
+            # if current score is minimum, return
             if v < alpha:
                 return v, v_action
-
+            # set new beta value to the smaller of either beta or v
             beta = min(beta, v)
-
+        # return minimum value
         return v, v_action
 
     def compute_score(self, state, agent, depth, alpha, beta):
         # iterated through all depths and game agents
         max_possible = depth >= self.depth * self.game_agents
-
+        # evaluate if game is over
         if max_possible or state.isLose() or state.isWin():
             return self.evaluationFunction(state)
-        if agent == 0:  # pacman
+        # if pacman, return max value
+        if agent == 0:
             return self.max_value(state, agent, depth, alpha, beta)[0]
+        # if ghosts, return min value
         else:
             return self.min_value(state, agent, depth, alpha, beta)[0]
 
@@ -326,11 +337,11 @@ class ExpectimaxAgent(MultiAgentSearchAgent):
           legal moves.
         """
         "*** YOUR CODE HERE ***"
+        # find how many agents
         self.game_agents = gameState.getNumAgents()
 
         # start with pacman agent at the root (depth 0)
         path = self.max_value(gameState, 0, 0)
-
         return path[1]
 
     def max_value(self, state, agent, depth):
@@ -347,39 +358,48 @@ class ExpectimaxAgent(MultiAgentSearchAgent):
             # iterate through to next agent
             new_agent = new_depth % self.game_agents
 
-            # get score for action
+            # get score for action given agent and depth
             cur_score = self.compute_score(state.generateSuccessor(agent, action), new_agent, new_depth)
 
-            # keep track of current
-            # max score and update if current score is max
+            # update if current score is max
             if cur_score > max_score:
                 max_score = cur_score
                 max_action = action
-
+        # return max value
         return max_score, max_action
 
     def rand_value(self, state, agent, depth):
+        # find legal actions for state
         legal_actions = state.getLegalActions(agent)
+        # create list of possible scores for states
         score_list = {}
         cur_score = 0
+        # loop through possible actions
         for action in legal_actions:
+            # increment depth to check all levels
             new_depth = depth + 1
+            # iterate through game agents
             new_agent = new_depth % self.game_agents
+            # assign scores for each action to list given agent and depth
             score_list[action] = self.compute_score(state.generateSuccessor(agent, action), new_agent, new_depth)
+        # loop through list and sum the scores
         for s in score_list.values():
             cur_score += s
+        # find the average score given the sum and and the number of elements in the list
         avg_score = float(cur_score) / float(len(score_list))
-
+        # return the float value average for ghost score
         return avg_score, None
 
     def compute_score(self, state, agent, depth):
         # iterated through all depths and game agents
         max_possible = depth >= self.depth * self.game_agents
-
+        # evaluate is game is over
         if max_possible or state.isLose() or state.isWin():
             return self.evaluationFunction(state)
+        # if pacman, return optimal value
         if agent == 0:
             return self.max_value(state, agent, depth)[0]
+        # if ghosts, return random suboptimal value
         else:
             return self.rand_value(state, agent, depth)[0]
 
@@ -391,12 +411,14 @@ def betterEvaluationFunction(currentGameState):
 
       DESCRIPTION: <write something here so we know what you did>
     """
+    # current pacman position
     curPos = currentGameState.getPacmanPosition()
+    # current ghost states
     ghostStates = currentGameState.getGhostStates()
 
     # set action score to zero
     total_score = 0.0
-
+    # make a list of closest ghosts to pacman
     closest_ghosts = []
     # loop through ghost states
     for ghostState in ghostStates:
@@ -404,19 +426,32 @@ def betterEvaluationFunction(currentGameState):
         ghost_pos = ghostState.getPosition()
         # calculate manhattan distance from player to ghost
         ghost_distance = util.manhattanDistance(curPos, ghost_pos)
+        # if ghost is next to pacman, add it to closest ghosts list
         if ghost_distance == 0:
             closest_ghosts.append(0)
+        # else rank each ghost based on distance
         else:
+            # if distance from pacman is further, the result is higher
+            # use this ghost score to discount food score
+            # if the ghost is close by then the pacman should avoid ghost
+            # rather than eating food
             g_score = -1/ghost_distance
             closest_ghosts.append(g_score)
-
+    # prioritize closest ghost
     ghost_score = min(closest_ghosts)
+    # if food is further away it's going to be a lower score
+    # find manhattan distance between pacman and food in list
+    # multiply values by -1 so that the max will return the closest food to the pacman
     food_distances = [-1*util.manhattanDistance(curPos, food_pos) for food_pos in currentGameState.getFood().asList()]
+    # if there is food still on the board, food score will return the closest food
     if len(food_distances):
         food_score = max(food_distances)
+    # if food is gone, food score is high
     else:
         food_score = 1000
+    # get current score given current game state
     current_score = currentGameState.getScore()
+    # get linear combination of food proximity, ghost proximity, and possible score in order to chose optimal move
     return food_score + ghost_score + current_score
 
 # Abbreviation
